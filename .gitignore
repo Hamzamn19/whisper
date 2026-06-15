@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Audio / video
+*.mp3
+*.mp4
+*.wav
+*.m4a
+*.flac
+*.ogg
+*.avi
+*.mkv
+*.mov
+
+# Output / temp
+output/
+temp/
+downloads/
+صوت
