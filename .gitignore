@@ -36,3 +36,6 @@ output/
 temp/
 downloads/
 صوت
+
+# Run logs
+*.log
