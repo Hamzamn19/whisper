@@ -53,6 +53,8 @@ NUM_WORKERS = 1
 is_recording = False
 recording_buffer = []
 stream = None
+rec_proc = None
+REC_RAW = "/tmp/whisper_rec.raw"  # التقاط عبر PipeWire مباشرة (يعمل مع البلوتوث)
 model = None
 
 print(f"⏳ تحميل Turbo بتقنية Google KV Compression...", flush=True)
@@ -276,26 +278,51 @@ def type_text(text):
         print(f"❌ خطأ الكتابة: {e}", flush=True)
 
 def transcribe_and_type():
-    global recording_buffer, stream
+    global recording_buffer, stream, rec_proc
     import time as time_module
     start_time = time_module.time()
 
-    print(f"📊 حجم Buffer: {len(recording_buffer)}", flush=True)
+    if rec_proc:
+        try:
+            rec_proc.terminate()
+            rec_proc.wait(timeout=5)
+        except Exception:
+            try:
+                rec_proc.kill()
+            except Exception:
+                pass
+        rec_proc = None
+        print("🔇 تم إغلاق المايكروفون", flush=True)
 
-    if not recording_buffer:
+    if stream:
+        try:
+            stream.stop()
+            stream.close()
+        except Exception:
+            pass
+        stream = None
+
+    # قراءة الصوت الملتقط عبر parecord (s16le/16k/mono)
+    try:
+        raw = np.fromfile(REC_RAW, dtype=np.int16)
+        try:
+            os.remove(REC_RAW)
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"⚠️ لم يتم تسجيل صوت! ({e})", flush=True)
+        return
+
+    if raw.size == 0:
         print("⚠️ لم يتم تسجيل صوت!", flush=True)
         return
 
-    if stream:
-        stream.stop()
-        stream.close()
-        stream = None
-        print("🔇 تم إغلاق المايكروفون", flush=True)
+    print(f"📊 حجم التسجيل: {raw.size} عينة", flush=True)
 
     # 🔥 تنظيف KV Cache قبل المعالجة
     free_gpu_memory()
 
-    audio_data = np.concatenate(recording_buffer, axis=0).flatten().astype(np.float32)
+    audio_data = (raw.astype(np.float32) / 32768.0).flatten()
     recording_buffer = []
     audio_duration = len(audio_data) / SAMPLE_RATE
     print(f"🎵 مدة الصوت: {audio_duration:.2f}s", flush=True)
@@ -344,32 +371,25 @@ def audio_callback(indata, frames, time, status):
         recording_buffer.append(indata.copy())
 
 def handle_toggle_signal(signum, frame):
-    global is_recording, recording_buffer, stream
+    global is_recording, recording_buffer, stream, rec_proc
     if not is_recording:
         print("🟢 تسجيل...", flush=True)
         recording_buffer = []
         try:
-            stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1, callback=audio_callback)
-            stream.start()
+            if os.path.exists(REC_RAW):
+                os.remove(REC_RAW)
+        except Exception:
+            pass
+        try:
+            rec_proc = subprocess.Popen(
+                ["parecord", "--rate=16000", "--channels=1",
+                 "--format=s16le", REC_RAW],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             is_recording = True
         except Exception as e:
-            print(f"❌ تعذر فتح المايك (لن تتوقف الخدمة): {e}", flush=True)
-            # محاولة أخيرة عبر جهاز pipewire مباشرة
-            try:
-                devs = sd.query_devices()
-                pipe = next((i for i, d in enumerate(devs)
-                             if "pipewire" in str(d.get("name", "")).lower()
-                             and d.get("max_input_channels", 0) > 0), None)
-                if pipe is None:
-                    raise RuntimeError("no pipewire input found")
-                stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1,
-                                        callback=audio_callback, device=pipe)
-                stream.start()
-                is_recording = True
-            except Exception as e2:
-                print(f"❌ فشل المايك نهائياً: {e2}", flush=True)
-                stream = None
-                is_recording = False
+            print(f"❌ تعذر بدء الالتقاط (لن تتوقف الخدمة): {e}", flush=True)
+            rec_proc = None
+            is_recording = False
     else:
         print("🔴 جاري المعالجة...", flush=True)
         is_recording = False
