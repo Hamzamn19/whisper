@@ -20,18 +20,24 @@ import sys
 import gc
 from pathlib import Path
 
-# إضافة مسار مكتبات NVIDIA CUDA
+# إضافة مسار مكتبات NVIDIA CUDA (من بيئة venv أولاً ثم النظام)
+_venv_nvidia = os.path.expanduser("~/Documents/whisper/.venv/lib/python3.14/site-packages/nvidia")
+if os.path.isdir(_venv_nvidia):
+    import glob as _glob
+    _nvidia_libs = ":".join(_glob.glob(os.path.join(_venv_nvidia, "*/lib")))
+    if _nvidia_libs:
+        os.environ['LD_LIBRARY_PATH'] = f"{_nvidia_libs}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 cuda_lib_path = os.path.expanduser("~/.local/lib/python3.12/site-packages/nvidia/cublas/lib")
 if os.path.exists(cuda_lib_path):
     os.environ['LD_LIBRARY_PATH'] = f"{cuda_lib_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 
 # --- الإعدادات المحسّنة مع تقنية Google ---
-MODEL_SIZE = "turbo"
+MODEL_SIZE = "large-v3"  # RTX 3060: أدق نموذج وما زال أسرع 14x من الزمن الحقيقي
 DEVICE = "cuda"
 
 # 🔥 تقنية الضغط الجديدة من Google
 # استهداف KV Cache لتقليل الذاكرة 6x بدون فقدان الدقة
-COMPUTE_TYPE = "int8"  # تم الإرجاع لـ int8 نظراً لمحدودية كرت MX330
+COMPUTE_TYPE = "float16"  # RTX 3060 12GB: دقة أعلى من int8 وسرعة فائقة (RTF 0.07 مقاساً)
 
 # معاملات إضافية لضغط KV Cache
 KV_CACHE_OPTIMIZATION = {

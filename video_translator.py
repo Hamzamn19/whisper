@@ -203,7 +203,7 @@ def download_video(
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-WHISPER_MODEL = "turbo"  # Same as smart_whisper.py
+WHISPER_MODEL = "large-v3"  # RTX 3060: نفس إعداد smart_whisper.py المرقّى
 BATCH_SIZE = 16  # Increased from 8 for faster translation
 DEFAULT_TARGET_LANG = "arb_Arab"
 
@@ -481,7 +481,7 @@ def probe_audio(audio_path: str, content_profile: str = None) -> dict:
         model = WhisperModel(
             WHISPER_MODEL,
             device="cuda",
-            compute_type="int8",
+            compute_type="float16",
             num_workers=1
         )
         
@@ -571,7 +571,7 @@ def transcribe_audio(audio_path: str, source_lang: str = None, initial_prompt: s
         model = WhisperModel(
             WHISPER_MODEL,
             device="cuda",
-            compute_type="int8",
+            compute_type="float16",
             num_workers=1
         )
         print(f"🚀 Loaded {WHISPER_MODEL} on GPU successfully!")
@@ -797,7 +797,7 @@ def producer_transcribe(
         model = WhisperModel(
             WHISPER_MODEL,
             device="cuda",
-            compute_type="int8",
+            compute_type="float16",
             num_workers=1
         )
         print(f"🚀 [Producer] Loaded {WHISPER_MODEL} on GPU successfully!")

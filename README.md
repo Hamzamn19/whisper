@@ -1,75 +1,67 @@
-# 🎤 Smart Whisper - نظام الإملاء الصوتي الذكي
+# 🎤 Smart Whisper - Intelligent Voice Dictation System
 
-## 📋 المواصفات النهائية
+Offline speech-to-text dictation powered by **faster-whisper** (CTranslate2) with CUDA acceleration.
+Press a hotkey, speak in any language, and the text is typed automatically.
 
-### النموذج الحالي:
-- **Whisper Turbo** على GPU (NVIDIA MX330)
-- **السرعة**: RTF 0.11x (أسرع 9x من الزمن الحقيقي!)
-- **الجودة**: ممتازة (99%+ دقة)
-- **اللغات**: 90+ لغة مع كشف تلقائي
+## 📊 Benchmarks (33.6s audio sample, telephony 8kHz)
 
-### الأداء:
+### RTX 3060 12GB (current, measured Oct 2026)
+
+| Config | Load | Transcribe | RTF | Speed |
+|--------|------|-----------|-----|-------|
+| turbo / int8 (legacy) | 3.0s | 1.71s | 0.051 | ~20x realtime |
+| turbo / float16 | 1.2s | 1.23s | **0.037** | ~27x realtime ⚡ |
+| large-v3 / float16 (default) | cached | 2.39s | 0.071 | ~14x realtime 🌟 |
+
+All configs transcribed the sample with 100% correct output.
+
+### NVIDIA MX330 2GB (old machine, Jan 2026)
+
+| Config | Transcribe (28s audio) | RTF |
+|--------|----------------------|-----|
+| turbo / int8 (cuda) | ~3s | 0.11x (~9x realtime) |
+
+Even the heaviest model (`large-v3`) on the RTX 3060 is faster than `turbo` was on the MX330.
+
+## 🚀 Usage
+
+1. Press **F8** → start recording 🟢
+2. Speak in any language (90+ with auto-detect)
+3. Press **F8** again → stop 🔴
+4. Wait 1–2 seconds → text is typed automatically! ⌨️
+
+## ⚙️ Configuration
+
+In `smart_whisper_google_optimized.py`:
+
+```python
+MODEL_SIZE = "large-v3"  # most accurate model
+DEVICE = "cuda"          # GPU acceleration
+COMPUTE_TYPE = "float16" # best quality/speed balance on 12GB VRAM
+SAMPLE_RATE = 16000
 ```
-28 ثانية صوت → 3 ثانية معالجة
-RTF: 0.11x ⚡⚡⚡⚡⚡
-```
 
-## 🚀 طريقة الاستخدام
-
-1. اضغط **F8** → ابدأ التسجيل 🟢
-2. تكلم بأي لغة
-3. اضغط **F8** مرة ثانية → إيقاف 🔴
-4. انتظر 2-3 ثواني → النص يُكتب تلقائياً! ⌨️
-
-## 📂 الملفات
-
-- `/home/hamzah/whisper/smart_whisper.py` - السكربت الرئيسي
-- `/home/hamzah/.config/systemd/user/smart_whisper.service` - خدمة systemd
-- F8 → مربوط في GNOME Keyboard Shortcuts
-
-## ⚙️ الأوامر المفيدة
+Run inside the bundled virtualenv (includes CUDA libraries + `faster-whisper` 1.2.1):
 
 ```bash
-# إعادة تشغيل
-systemctl --user restart smart_whisper.service
-
-# عرض الحالة
-systemctl --user status smart_whisper.service
-
-# عرض السجلات
-journalctl --user -u smart_whisper.service -f
-
-# إيقاف
-systemctl --user stop smart_whisper.service
+cd ~/Documents/whisper
+.venv/bin/python smart_whisper_google_optimized.py
 ```
 
-## 🔧 التكوين
+## 📂 Files
 
-في `smart_whisper.py`:
-```python
-MODEL_SIZE = "turbo"     # النموذج
-DEVICE = "cuda"          # GPU
-COMPUTE_TYPE = "int8"    # الكفاءة
-SAMPLE_RATE = 16000      # معدل التسجيل
-```
+- `smart_whisper_google_optimized.py` - main dictation script (F8 hotkey)
+- `video_translator.py` / `video_translator_gui.py` - offline video subtitling & translation
+- `journal.py`, `glossary.py` - helpers
+- `FINAL_SUMMARY.md`, `GOOGLE_KV_COMPRESSION.md` - design notes (Arabic)
 
-## 📊 الإحصائيات
+## 🛠️ Stack
 
-- استخدام GPU: ~1.5 GB VRAM
-- استخدام RAM: ~1 GB
-- CPU: خفيف جداً
-- السرعة: أسرع 3x من large-v3
+- **faster-whisper** (CTranslate2) + **CUDA** + `float16`
+- **sounddevice** - audio capture, **ydotool** - typing on Wayland
+- **systemd** user service + GNOME keyboard shortcut (F8)
 
-## ✨ الميزات
+## 📈 Resource usage (RTX 3060, large-v3/float16)
 
-✅ تشغيل تلقائي مع الجهاز
-✅ كشف تلقائي للغة
-✅ سرعة فائقة (GPU)
-✅ جودة عالية جداً
-✅ مستقر 100%
-✅ تنظيف ذكي للذاكرة
-
-## 🎉 تم بناؤه بنجاح!
-
-التاريخ: 25 يناير 2026
-الحالة: جاهز للاستخدام
+- GPU VRAM: ~3 GB of 12 GB
+- Speed: 14x faster than realtime — dictation feels instant
