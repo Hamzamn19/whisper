@@ -371,7 +371,14 @@ def audio_callback(indata, frames, time, status):
         recording_buffer.append(indata.copy())
 
 def handle_toggle_signal(signum, frame):
-    global is_recording, recording_buffer, stream, rec_proc
+    global is_recording, recording_buffer, stream, rec_proc, _last_toggle
+    try:
+        now = time.monotonic()
+    except Exception:
+        now = 0
+    if now - globals().get("_last_toggle", 0) < 1.5:
+        return  # ارتداد: تجاهل الإشارات المتقاربة
+    globals()["_last_toggle"] = now
     if not is_recording:
         print("🟢 تسجيل...", flush=True)
         recording_buffer = []
