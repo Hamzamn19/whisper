@@ -348,9 +348,28 @@ def handle_toggle_signal(signum, frame):
     if not is_recording:
         print("🟢 تسجيل...", flush=True)
         recording_buffer = []
-        is_recording = True
-        stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1, callback=audio_callback)
-        stream.start()
+        try:
+            stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1, callback=audio_callback)
+            stream.start()
+            is_recording = True
+        except Exception as e:
+            print(f"❌ تعذر فتح المايك (لن تتوقف الخدمة): {e}", flush=True)
+            # محاولة أخيرة عبر جهاز pipewire مباشرة
+            try:
+                devs = sd.query_devices()
+                pipe = next((i for i, d in enumerate(devs)
+                             if "pipewire" in str(d.get("name", "")).lower()
+                             and d.get("max_input_channels", 0) > 0), None)
+                if pipe is None:
+                    raise RuntimeError("no pipewire input found")
+                stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1,
+                                        callback=audio_callback, device=pipe)
+                stream.start()
+                is_recording = True
+            except Exception as e2:
+                print(f"❌ فشل المايك نهائياً: {e2}", flush=True)
+                stream = None
+                is_recording = False
     else:
         print("🔴 جاري المعالجة...", flush=True)
         is_recording = False
@@ -366,6 +385,10 @@ def parse_args():
 
 def main():
     args = parse_args()
+    try:
+        Path("/tmp/smart_whisper.pid").write_text(str(os.getpid()), encoding="utf-8")
+    except Exception:
+        pass
     if args.batch_folder:
         process_audio_folder(args.batch_folder, args.output_dir)
         return
