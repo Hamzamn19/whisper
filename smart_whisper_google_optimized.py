@@ -293,6 +293,13 @@ def transcribe_and_type():
                 pass
         rec_proc = None
         print("🔇 تم إغلاق المايكروفون", flush=True)
+    # شبكة أمان: اقتل أي مسجّلات يتيمة عالقة على نفس الملف
+    try:
+        subprocess.run(["pkill", "-f", "parecord.*whisper_rec.raw"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       timeout=5)
+    except Exception:
+        pass
 
     if stream:
         try:
@@ -388,6 +395,10 @@ def handle_toggle_signal(signum, frame):
         except Exception:
             pass
         try:
+            # أولاً: نظّف أي مسجّل يتيم عالق من دورة سابقة
+            subprocess.run(["pkill", "-f", "parecord.*whisper_rec.raw"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           timeout=5)
             rec_proc = subprocess.Popen(
                 ["parecord", "--rate=16000", "--channels=1",
                  "--format=s16le", REC_RAW],
