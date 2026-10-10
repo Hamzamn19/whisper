@@ -32,7 +32,7 @@ if os.path.exists(cuda_lib_path):
     os.environ['LD_LIBRARY_PATH'] = f"{cuda_lib_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 
 # --- الإعدادات المحسّنة مع تقنية Google ---
-MODEL_SIZE = "large-v3"  # RTX 3060: أدق نموذج وما زال أسرع 14x من الزمن الحقيقي
+MODEL_SIZE = os.environ.get("WHISPER_MODEL", "large-v3")  # large-v3 الدقيق | turbo السريع
 DEVICE = "cuda"
 
 # 🔥 تقنية الضغط الجديدة من Google
@@ -57,7 +57,7 @@ rec_proc = None
 REC_RAW = "/tmp/whisper_rec.raw"  # التقاط عبر PipeWire مباشرة (يعمل مع البلوتوث)
 model = None
 
-print(f"⏳ تحميل Turbo بتقنية Google KV Compression...", flush=True)
+print(f"⏳ تحميل {MODEL_SIZE} بتقنية Google KV Compression...", flush=True)
 print(f"📊 مع توقع توفير 6x من الذاكرة...", flush=True)
 
 try:

@@ -1,5 +1,8 @@
 #!/bin/bash
 # تشغيل خدمة الإملاء الذكي (يتأكد أولاً أنها ليست شغالة)
+# اختيار النموذج: ./start_whisper.sh [large-v3|turbo] (الافتراضي: الدقيق large-v3)
+MODEL_CHOICE="${1:-large-v3}"
+export WHISPER_MODEL="$MODEL_CHOICE"
 PIDFILE=/tmp/smart_whisper.pid
 if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     notify-send "🎤 الإملاء الذكي" "يعمل بالفعل ✓" 2>/dev/null
